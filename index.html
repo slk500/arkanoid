@@ -16,21 +16,88 @@ const PADDLE_WIDTH = 100;
 const PADDLE_HEIGHT = 20;
 const BRICKS_WIDTH = 60;
 const BRICKS_HEIGHT  = 30;
+const BALL_RADIUS = 8;
 
 var stage;
 var paddle;
 var ball;
-
+var bricks = [];
 
 function init()
 {
     stage = new createjs.Stage("testCanvas");
     createjs.Ticker.setFPS(60);
-    createjs.Ticker.addEventListener("tick", stage);
+    createjs.Ticker.addEventListener("tick", tick);
 
     createBall();
     createBrickGrid();
     createPaddle();
+}
+
+function tick() {
+  stage.update();
+
+  if(ball.up)
+  {
+    ball.y -= ball.ySpeed;
+  }
+  else
+  {
+    ball.y += ball.ySpeed;
+  }
+
+  if(ball.right)
+  {
+    ball.x += ball.xSpeed;
+  }
+  else
+  {
+   ball.x -=ball.xSpeed;
+  }
+
+  //check if we've reached the walls
+  if(ball.x + BALL_RADIUS >= stage.canvas.width)
+  {
+    ball.x = stage.canvas.width - BALL_RADIUS;
+    ball.right = false;
+  }
+
+  //right
+  if(ball.x - BALL_RADIUS <= 0)
+  {
+    ball.x = BALL_RADIUS;
+    ball.right = true;
+  }
+
+  //top
+  if(ball.y - BALL_RADIUS <= 0)
+  {
+    ball.y = BALL_RADIUS;
+    ball.up = false;
+  }
+
+  //bottom
+  if(ball.y + BALL_RADIUS >= stage.canvas.height)
+  {
+    ball.y = stage.canvas.height - BALL_RADIUS;
+    ball.up = true;
+  }
+
+  for(let i=0; i < bricks.length; i++)
+  {
+    if(checkCollision(ball,bricks[i]))
+    {
+      destroyBrick(bricks[i]);
+      bricks.splice(i,1);
+      i--;
+    }
+  }
+}
+
+function checkCollision(ballElement, brickElement) {
+  if(ballElement.x + BALL_RADIUS <= brickElement.x - BRICKS_WIDTH/2 || ballElement.x - BALL_RADIUS >= brickElement.x +
+  BRICKS_WIDTH / 2 || ballElement.y - BALL_RADIUS >= brickElement.y + BRICKS_HEIGHT/2 || ballElement.y + BALL_RADIUS <= brickElement.y - BRICKS_HEIGHT) return false;
+  return true;
 }
 
 function createBrick(x,y)
@@ -46,6 +113,9 @@ function createBrick(x,y)
 
     brick.x = x;
     brick.y = y;
+    brick.downEdge = brick.y + 15;
+
+    bricks.push(brick);
 }
 
 function createBrickGrid() {
@@ -59,10 +129,17 @@ function createBrickGrid() {
 
 function createBall() {
     ball = new createjs.Shape();
-    ball.graphics.beginFill("Red").drawCircle(0,0,8);
+    ball.graphics.beginFill("Red").drawCircle(0,0,BALL_RADIUS);
     ball.x = stage.canvas.width / 2;
-    ball.y = stage.canvas.height  / 2;
+    ball.y = 390;
     stage.addChild(ball);
+
+    ball.up = true;
+    ball.right = true;
+    ball.xSpeed = 0;
+    ball.ySpeed = 1;
+    ball.lastX = 0;
+    ball.lastY = 0;
 }
 
 function destroyBrick(brick) {
@@ -74,7 +151,8 @@ function destroyBrick(brick) {
 function createPaddle() {
     paddle = new createjs.Shape();
     paddle.graphics.beginFill("#000000").drawRect(0,0,PADDLE_WIDTH, PADDLE_HEIGHT);
-    paddle.y = 200;
+    paddle.y = 400;
+    paddle.x = stage.canvas.width / 2 - PADDLE_WIDTH / 2; 
     stage.addChild(paddle)
 }
       
